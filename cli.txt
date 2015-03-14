@@ -1,0 +1,107 @@
+#arp WOL
+arp -s 192.168.1.254 FF:FF:FF:FF:FF:FF
+
+#snr
+adslphxcmd info --show
+wan dmt2 set snrmoffset 4096 4096
+wan adsl reset 
+
+#nat loopback
+POSTROUTING
+
+iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -p tcp --dport 22 -d 192.168.1.2 -j SNAT
+
+
+iptables -t nat -A POSTROUTING -d 192.168.1.1 -s 192.168.1.0/24 -p tcp --dport 3339 -j SNAT --to 192.168.1.2
+
+
+iptables -t nat -A PREROUTING -i br0 -p tcp --dport 3339 -j DNAT --to-destination 192.168.1.2:22
+iptables -t nat -A PREROUTING -i ppp0 -p tcp --dport 3339 -j DNAT --to-destination 192.168.1.2:22
+
+iptables -t nat -A PREROUTING -i br0 -d 79.107.180.35 -p tcp --dport 3339 -j DNAT --to-destination 192.168.1.2:22
+
+iptables -t nat -A PREROUTING -i ppp0 -d 79.107.180.35 -p tcp --dport 3339 -j DNAT --to-destination 192.168.1.2:22
+
+iptables -t nat -L
+
+#namecheap
+DDNS - namecheap
+curl https://dynamicdns.park-your-domain.com/update?host=doddo&domain=soccernumerics.com&password=22a46a87c612460fba28e1fcfbf9752e&ip=37.6.224.79
+
+mtd readflash /tmp/a 5036728 0 rootfs
+mtd -r writeflash /tmp/mnt/usb1_1/E9560.sq 5038080 0 /dev/mtd3
+echo "flash::17431:10513:flash:/:/bin/sh" >> /etc/passwd 
+mtd -r write /tmp/mnt/usb1_1/E9560.sq rootfs
+
+cp tclinux.bin tclinux-mod.bin; dd conv=notrunc obs=955744 seek=1 if=_tclinux.bin.extracted/E9560.sq of=tclinux-mod.bin
+
+TODO
+1) arp			done
+2) snr			done
+3) nat loopback		?
+4) samba wins		done
+5) ddns namecheap	requires compilation - done
+6) minidlna		>>
+7) hardening
+   a) TR-69		deactivated - not sure if it works or not
+   b) user3		?
+   c) jfghdsghdfghdkfg	?
+   d) ACL		done
+
+
+ZTE ZXDSL831CII
+Chassis PCB - BZRD0 V1.0
+Cpu - U100 TrenChip TC3162U-LQ128G
+Sdram - EtronTech EM6381165TS-6G
+Spi Flash - winbond 25Q16BVSIG
+---------------------------------------------
+U200 - TRENDCHIP TC3086-QFN64-EPG
+Dc/Dc - MP1482DS - 34063
+U300 - TrenChip TC2205F 
+
+   ZTE ZXDSL 831CII
+   Huawei HG523 HG530
+
+# cat /proc/mtd 
+dev:    size   erasesize  name
+mtd0: 00010000 00010000 "bootloader"
+mtd1: 00010000 00010000 "romfile"
+mtd2: 000e9560 00010000 "kernel"
+mtd3: 004ce000 00010000 "rootfs"
+mtd4: 007a0000 00010000 "tclinux"
+mtd5: 00040000 00010000 "reservearea"
+
+
+mips-linux-gnu-objcopy -I binary -O elf32-tradbigmips -B mips --rename-section .data=.text --change-address 0xbfbc00000 p0.head p0.head.elf
+mips-linux-gnu-objdump -D p0.head.elf > p0.head.asm
+
+dd if=p0 of=p0.1 seek=960 count=6260 bs=1
+mips-linux-gnu-objcopy -I binary -O elf32-tradbigmips -B mips --rename-section .data=.text --change-address 0xb80000000 p0.1 p0.1.elf
+mips-linux-gnu-objdump -D p0.1.elf > p0.1.asm
+
+
+qemu-system-mips  -M mips -pflash flash -monitor null -nographic -S -s
+gdb-multiarch p0.head.elf 
+gdb>
+  target remote localhost:1234
+  load p0.head.elf32
+  x/14i $pc
+  stepi
+  info registers
+  
+qemu-system-mips -L .  -option-rom 0xb0000000.bin  -pflash flash -monitor null -nographic -d in_asm 2>delme
+
+awk '{printf("%s", $2);}' < crc32table.asm > crc32table.dat
+
+extract kernel file
+  dd if=../tclinux.bin.orig of=kernel skip=256 count=`binwalk ../tclinux.bin.orig | awk '/Squash/ {print $1 - 256;}'` bs=1
+
+create squashfs file
+rm E9560.sq; ../firmware-mod-kit/src/squashfs-3.0/mksquashfs-lzma E9560 E9560.sq
+
+/userfs/bin/mtd writeflash /tmp/var/romfile.cfg 65536
+
+
+sudo mount -o loop ./uclibc/0.9.30/system-image-mips/image-mips.ext2 /mnt/
+sudo umount /home/bill/Downloads/hardware/DSL-ZTE-H108NSV/uclibc/0.9.30/system-image-mips/image-mips.ext2
+
