@@ -4,23 +4,21 @@ Hacking TrendChip Firmware (ADSL modem/router ZTE H108NS)
 ##Purpose
 **tcrevenge** is a command line utility that helps you analyze and compose TrendChip firmware images (tclinux.bin). It reimplements the **CRC** algorithm found in firmware that prohibits broken or custom firmware uploads.
 
-With this utility you can heavily customize your TrendChip firmware as beeing demonstrated in the https://vasvir.wordpress.com blog. All the tests have been made with ZTE H108NS but it should apply to other modem/routers that employ TrendChip firmware. For a possible list check https://wikidevi.com/wiki/Special:Ask?title=Special%3AAsk&q=%3Cq%3E[[CPU1+model::~TC3162U*]]
+With this utility you can heavily customize your TrendChip firmware as beeing demonstrated in the https://vasvir.wordpress.com/2015/03/08/reverse-engineering-trendchip-firmware-zte-h108ns-part-i/ blog. All the tests have been made with ZTE H108NS but it should apply to other modem/routers that employ TrendChip firmware. For a possible list check https://wikidevi.com/wiki/Special:Ask?title=Special%3AAsk&q=%3Cq%3E[[CPU1+model::~TC3162U*]]
 
 ###Warning and Disclaimer
-Although running **tcrevenge** is a non destructive operation if you apply the procedure blindly without safeguards you may end up with a brick instead of a modem router. Furthermore, when in compose mode **tcrevenge** is creating two files  named:
-* heading
-* padding
+Although running **tcrevenge** is a non destructive operation if you apply the procedure blindly without safeguards you may end up with a brick instead of a modem router. Furthermore, when in compose mode **tcrevenge** is creating two files named (heading, padding) with user specified names.
 
-If you have files named like this in your current working directory it will be overriden.
+If you have files named like this in your current working directory it will be overriden. This is clearly a user error but the software could safeguard against.
 
 ##Build
-**tcrevenge** is a very simple command line utility. It does only need file access. It doesn't link with fancy libraries so no config is needed for the time beeing.
+**tcrevenge** is a very simple command line utility. It does only need file access. It doesn't link with fancy libraries so no software configuration is required for the time beeing.
 
 If you have GNU Make you can do
 ```
 make
 ```
-it should be enough. If it isn't (you don't have make or something equally weird) try to compile and link it your own. It is just a file.
+it should be enough. If it isn't (you don't have make or something equally weird) try to compile and link it your own. It is just a **C** file.
 
 ##Usage
 ###Binwalk
@@ -85,7 +83,7 @@ The header has the following fields
 * 0x54 squashfs size = size of squashfs size as reported by binwalk 5038080 bytes padded to 4096 (0x1000) sector 5038080 (0x4CE000)
 * 0x5C model string = “3 6035 122 74\n” in my case
 
-See https://vasvir.wordpress.com for more information.
+See https://vasvir.wordpress.com/2015/03/08/reverse-engineering-trendchip-firmware-zte-h108ns-part-i/ for more information.
 
 ###Analying firmware
 Running **tcrevenge** with -c enters the analyzing mode. It prints entries found in the header of the supplied firmware and where possible the computed values so a user can tell if it is safe (with full disclaimers) to use **tcrevenge** in order to customize its firmware.
