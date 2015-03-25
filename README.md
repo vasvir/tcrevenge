@@ -67,14 +67,63 @@ mtd5: 00040000 00010000 "reservearea"
 * p5 is a reserved partition
 
 ###Firmware layout
-|Offset | Section |
-|-------|---------|
-| 1     | 2       |
+So the firmware image looks like this
+* 0-0x100 Header
+* secondary bootloader (Couldn’t figure which was it)
+* Linux kernel + initrd (Not sure which order)
+* 0x09560 squashfs
+* padding to 4K
 
-```
-$dd if=tclinux.bin.orig of=kernel skip=256 count=`binwalk ../tclinux.bin.orig | awk '/Squash/ {print $1 - 256;}'` bs=1
-```
+The header has the following fields
+* 0x00 magic number = 0x32524448
+* 0x04 magic device (or header size – not sure) = 0x100
+* 0x08 tclinux size = actual file size in bytes with header included
+* 0x0C tclinux checsum = CRC – XOR checksum see below how to calculate
+* 0x10 firmware version string = “7.0.1.0\n” in my case
+* 0x30 a newline = “\n”
+* 0x50 squashfs offset = 0x9560 in my case
+* 0x54 squashfs size = size of squashfs size as reported by binwalk 5038080 bytes padded to 4096 (0x1000) sector 5038080 (0x4CE000)
+* 0x5C model string = “3 6035 122 74\n” in my case
+
 See https://vasvir.wordpress.com for more information.
 
 ###Analying firmware
+Running **tcrevenge** with -c enters the analyzing mode. It prints entries found in the header of the supplied firmware and where possible the computed values so a user can tell if it is safe (with full disclaimers) to use **tcrevenge** in order to customize its firmware.
+```
+./tcrevenge -c ../tclinux.bin.orig
+Manual check (binwalk): header size must be 256 (0x0100)
+Magic number: 0x32524448 found 0x32524448 ...ok
+Magic device: 0x00000100 found 0x00000100 ...ok
+tclinux.bin size: 5993824 found 5993824 ...ok
+tclinux.bin chekcsum: 0x484DDDF4 found 0x484DDDF4 ...ok
+Firmware version: 7.0.1.0
+Manual check (binwalk): squashfs offset must be at 0x000E9560
+Manual check (mtd partition dump): squashfs size (padded to erase_size at 4K (0x1000)) must be at 5038080 (0x004CE000)
+Manual check (all tests have been done with model 3) Model: 3 6035 122 79
+```
+
 ###Composing firmware
+The following command line can extract the kernel and initrd from the original image
+```
+$dd if=tclinux.bin.orig of=kernel skip=256 count=`binwalk ../tclinux.bin.orig | awk '/Squash/ {print $1 - 256;}'` bs=1
+```
+The tcrevenge program will output the header and the necessary padding and a nice command line suggestion to create the new **tclinux.bin**.
+```
+$./tcrevenge -k kernel -s squashfs-root.sq -o header -p padding
+Creating necessary squashfs paddingfile padding 1352
+Magic number: 0x32524448 at 0x00
+Magic device: 0x00000100 at 0x04
+tclinux.bin size: 5993824 (0x005B7560) at 0x08
+tclinux.bin checksum: 0xD4BEA4AA at 0x0C
+Firmware version at 0x10: 7.0.1.0
+squashfs offset: 955488 (0x000E9460) at 0x50
+squashfs size: 5038080 (0x004CE000) at 0x54
+Model at 0x5C: 3 6035 122 74
+Writing header to header. Create image with
+         cat header kernel squashfs-root.sq padding > tclinux.bin
+$
+```
+##TODO
+* Don't overwrite existing local files without warning.
+* command line option for model instead of hard wiring it.
+* warn if the modifications to the firmware lead to flash sizes bigger than 16MB (maybe also configurable flash size)
