@@ -6,24 +6,6 @@ adslphxcmd info --show
 wan dmt2 set snrmoffset 4096 4096
 wan adsl reset 
 
-#nat loopback
-POSTROUTING
-
-iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -p tcp --dport 22 -d 192.168.1.2 -j SNAT
-
-
-iptables -t nat -A POSTROUTING -d 192.168.1.1 -s 192.168.1.0/24 -p tcp --dport 3339 -j SNAT --to 192.168.1.2
-
-
-iptables -t nat -A PREROUTING -i br0 -p tcp --dport 3339 -j DNAT --to-destination 192.168.1.2:22
-iptables -t nat -A PREROUTING -i ppp0 -p tcp --dport 3339 -j DNAT --to-destination 192.168.1.2:22
-
-iptables -t nat -A PREROUTING -i br0 -d 79.107.180.35 -p tcp --dport 3339 -j DNAT --to-destination 192.168.1.2:22
-
-iptables -t nat -A PREROUTING -i ppp0 -d 79.107.180.35 -p tcp --dport 3339 -j DNAT --to-destination 192.168.1.2:22
-
-iptables -t nat -L
-
 #namecheap
 DDNS - namecheap
 curl https://dynamicdns.park-your-domain.com/update?host=myhost&domain=mydomain.net&password=543535353536456464366&ip=137.137.137.137
