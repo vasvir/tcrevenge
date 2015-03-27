@@ -7,7 +7,7 @@ Hacking TrendChip Firmware (ADSL modem/router ZTE H108NS)
 With this utility you can heavily customize your TrendChip firmware as beeing demonstrated in the https://vasvir.wordpress.com/2015/03/08/reverse-engineering-trendchip-firmware-zte-h108ns-part-i/ blog. All the tests have been made with ZTE H108NS but it should apply to other modem/routers that employ TrendChip firmware. For a possible list check https://wikidevi.com/wiki/Special:Ask?title=Special%3AAsk&q=%3Cq%3E[[CPU1+model::~TC3162U*]]
 
 ###Warning and Disclaimer
-Although running **tcrevenge** is a non destructive operation if you apply the procedure blindly without safeguards you may end up with a brick instead of a modem router. Furthermore, when in compose mode **tcrevenge** is creating two files named (heading, padding) with user specified names.
+Although running **tcrevenge** is a non destructive operation if you apply the procedure blindly without safeguards you may end up with a brick instead of a modem router. Furthermore, when in compose mode **tcrevenge** is creating two files (heading, padding) with user specified names.
 
 If you have files named like this in your current working directory it will be overriden. This is clearly a user error but the software could safeguard against.
 
