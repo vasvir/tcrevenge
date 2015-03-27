@@ -26,7 +26,7 @@ iptables -t nat -L
 
 #namecheap
 DDNS - namecheap
-curl https://dynamicdns.park-your-domain.com/update?host=doddo&domain=soccernumerics.com&password=543535353536456464366&ip=137.137.137.137
+curl https://dynamicdns.park-your-domain.com/update?host=myhost&domain=mydomain.net&password=543535353536456464366&ip=137.137.137.137
 
 mtd readflash /tmp/a 5036728 0 rootfs
 mtd -r writeflash /tmp/mnt/usb1_1/E9560.sq 5038080 0 /dev/mtd3
