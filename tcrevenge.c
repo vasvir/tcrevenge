@@ -7,9 +7,9 @@
 
 const unsigned int header_size = 0x100;
 const unsigned int magic_number = 0x32524448;
-const unsigned int magic_device = 0x00000100;
-const char *firmware_version = "7.0.1.0\n";
-const char *model="3 6035 122 74\n";
+const unsigned int magic_device = 0x00000100;	// maybe the header_size
+const char *firmware_version = "7.0.1.0\n";	// this looks that is not actually used
+const char *model="3 6035 122 74\n";		// this is used to prevent downgrades. It is the actual version
 
 const unsigned int magic_number_offset = 0;
 const unsigned int magic_device_offset = 4;
@@ -59,6 +59,28 @@ unsigned int calc_crc32(unsigned int sum, const char *filename, int offset) {
     
   close(fd);
   return sum;
+}
+
+char *strip_newline(const char *src) {
+  char* dst = strdup(src);
+  char *p = dst;
+  while (*p != '\0') {
+    if (*p == '\n') {
+      *p = '\0';
+      break;
+    }
+    p++;
+  }
+  return dst;
+}
+
+char *add_newline(const char *src) {
+  const int l = strlen(src);
+  char *dst = malloc(l + 2);
+  strcpy(dst, src);
+  dst[l] = '\n';
+  dst[l+1] = '\0';
+  return dst;
 }
 
 int main(int argc, const char *argv[]) {
@@ -146,6 +168,28 @@ int main(int argc, const char *argv[]) {
         paddingfile = argv[i];
         arg_err = 0;
         continue;
+      } else if (!strcmp(argv[i], "-m") || !strcmp(argv[i], "--model")) {
+        mode = CREATE;
+        if (i >= argc -1) {
+          fprintf(stderr, "Model (actual version) not specified\n");
+          arg_err = 2;
+          break;
+        }
+        i++;
+        model = add_newline(argv[i]);
+        arg_err = 0;
+        continue;
+      } else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
+        mode = CREATE;
+        if (i >= argc -1) {
+          fprintf(stderr, "Firmware version (probably useless) not specified\n");
+          arg_err = 2;
+          break;
+        }
+        i++;
+        firmware_version = add_newline(argv[i]);
+        arg_err = 0;
+        continue;
       } else {
         fprintf(stderr, "Unknown argument %s\n", argv[i]);
         arg_err = 1;
@@ -174,7 +218,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == HELP || arg_err) {
-    fprintf(stderr, "Usage: %s [ {-h|--help} | {-c|--check tclinux.bin} | {-k|--kernel kernel.bin -s|--squashfs squashfs.bin -o|--output header.bin -p|--padding padding.bin} ]\n", argv[0]);
+    fprintf(stderr, "Usage: %s [ {-h|--help} | {-c|--check tclinux.bin} | {-k|--kernel kernel.bin -s|--squashfs squashfs.bin -o|--output header.bin -p|--padding padding.bin [-m|--model 'model]' [-v|--version 'firmware_version']} ]\n", argv[0]);
     return arg_err;
   }
 
@@ -212,12 +256,12 @@ int main(int argc, const char *argv[]) {
     printf("tclinux.bin size: %u found %u ...%s\n", tclinux_size, found_tclinux_size, tclinux_size == found_tclinux_size ? "ok" : "failed");
     const unsigned int found_tclinux_checksum =  be2int(header + tclinux_checksum_offset);
     printf("tclinux.bin chekcsum: 0x%08X found 0x%08X ...%s\n", sum, found_tclinux_checksum, sum == found_tclinux_checksum ? "ok" : "failed");
-    printf("Firmware version: %s", header + firmware_version_offset);
+    printf("Manual check Firmware version: %s found %s. If they differ use -v to adjust.\n", strip_newline(firmware_version), strip_newline((const char *) header + firmware_version_offset));
     const unsigned int found_squashfs_offset =  be2int(header + squashfs_offset_offset);
     printf("Manual check (binwalk): squashfs offset must be at 0x%08X\n", found_squashfs_offset + header_size);
     const unsigned int found_squashfs_size =  be2int(header + squashfs_size_offset);
     printf("Manual check (mtd partition dump): squashfs size (padded to erase_size at 4K (0x1000)) must be at %u (0x%08X)\n", found_squashfs_size, found_squashfs_size);
-    printf("Manual check (all tests have been done with model 3) Model: %s", header + model_offset);
+    printf("Manual check (all tests have been done with model 3) Model: %s found %s. If they differ use -m to adjust.\n", strip_newline(model), strip_newline((const char *) header + model_offset));
   }
 
   if (mode == CREATE) {
@@ -258,14 +302,14 @@ int main(int argc, const char *argv[]) {
     set_int(header, tclinux_size_offset, tclinux_size);
     printf("tclinux.bin checksum: 0x%08X at 0x%02X\n", sum, tclinux_checksum_offset);
     set_int(header, tclinux_checksum_offset, sum);
-    printf("Firmware version at 0x%02X: %s", firmware_version_offset, firmware_version);
+    printf("Firmware version at 0x%02X: %s\n", firmware_version_offset, strip_newline(firmware_version));
     set_string(header, firmware_version_offset, firmware_version);
     set_string(header, 0x30, "\n");
     printf("squashfs offset: %u (0x%08X) at 0x%02X\n", squashfs_offset, squashfs_offset, squashfs_offset_offset);
     set_int(header, squashfs_offset_offset, squashfs_offset);
     printf("squashfs size: %u (0x%08X) at 0x%02X\n", squashfs_size, squashfs_size, squashfs_size_offset);
     set_int(header, squashfs_size_offset, squashfs_size);
-    printf("Model at 0x%02X: %s", model_offset, model);
+    printf("Model at 0x%02X: %s\n", model_offset, strip_newline(model));
     set_string(header, model_offset, model);    
 
     printf("Writing header to %s. Create image with\n\tcat %s %s %s %s > tclinux.bin\n", outputheaderfile, outputheaderfile, kernelfile, squashfsfile, paddingfile);
