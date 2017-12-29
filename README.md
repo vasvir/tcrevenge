@@ -1,17 +1,17 @@
 # tcrevenge
 Hacking TrendChip Firmware (ADSL modem/router ZTE H108NS)
 
-##Purpose
+## Purpose
 **tcrevenge** is a command line utility that helps you analyze and compose TrendChip firmware images (tclinux.bin). It reimplements the **CRC** algorithm found in firmware that prohibits broken or custom firmware uploads.
 
 With this utility you can heavily customize your TrendChip firmware as beeing demonstrated in the https://vasvir.wordpress.com/2015/03/08/reverse-engineering-trendchip-firmware-zte-h108ns-part-i/ blog. All the tests have been made with ZTE H108NS but it should apply to other modem/routers that employ TrendChip firmware. For a possible list check https://wikidevi.com/wiki/Special:Ask?title=Special%3AAsk&q=%3Cq%3E[[CPU1+model::~TC3162U*]]
 
-###Warning and Disclaimer
+### Warning and Disclaimer
 Although running **tcrevenge** is a non destructive operation if you apply the procedure blindly without safeguards you may end up with a brick instead of a modem router. Furthermore, when in compose mode **tcrevenge** is creating two files (heading, padding) with user specified names.
 
 If you have files named like this in your current working directory it will be overriden. This is clearly a user error but the software could safeguard against.
 
-##Build
+## Build
 **tcrevenge** is a very simple command line utility. It does only need file access. It doesn't link with fancy libraries so no software configuration is required for the time beeing.
 
 If you have GNU Make you can do
@@ -20,8 +20,8 @@ make
 ```
 it should be enough. If it isn't (you don't have make or something equally weird) try to compile and link it your own. It is just a **C** file.
 
-##Usage
-###Binwalk
+## Usage
+### Binwalk
 Let's run binwalk to get an idea of what's going on.
 ```
 $binwalk -e tclinux.bin
@@ -38,7 +38,7 @@ DECIMAL HEXADECIMAL DESCRIPTION
 1430825 0x15D529 LZMA compressed data, properties: 0xD0, dictionary size: 131072 bytes, uncompressed size: 277750168 bytes
 2646072 0x286038 Linux kernel version "2.6.22.15 (root@mbjsbbcf01) (gcc version 3.4.6) #1 Tue Feb 11 1c version 3.4.6) #1 Tue Feb 11 10:17:49 CST 2014"
 ```
-###Flash
+### Flash
 By looking inside the modem with telnet we can see how these all endup in the flash
 ```
 $ telnet 192.168.1.1
@@ -64,7 +64,7 @@ mtd5: 00040000 00010000 "reservearea"
 * p4 holds the tclinux.bin verbatim so the primary bootloader can recover the modem
 * p5 is a reserved partition
 
-###Firmware layout
+### Firmware layout
 So the firmware image looks like this
 * 0-0x100 Header
 * secondary bootloader (Couldn’t figure which was it)
@@ -85,7 +85,7 @@ The header has the following fields
 
 See https://vasvir.wordpress.com/2015/03/08/reverse-engineering-trendchip-firmware-zte-h108ns-part-i/ for more information.
 
-###Analying firmware
+### Analying firmware
 Running **tcrevenge** with -c enters the analyzing mode. It prints entries found in the header of the supplied firmware and where possible the computed values so a user can tell if it is safe (with full disclaimers) to use **tcrevenge** in order to customize its firmware.
 ```
 ./tcrevenge -c ../tclinux.bin.orig
@@ -100,7 +100,7 @@ Manual check (mtd partition dump): squashfs size (padded to erase_size at 4K (0x
 Manual check (all tests have been done with model 3) Model: 3 6035 122 79
 ```
 
-###Composing firmware
+### Composing firmware
 The following command line can extract the kernel and initrd from the original image
 ```
 $dd if=tclinux.bin.orig of=kernel skip=256 count=`binwalk ../tclinux.bin.orig | awk '/Squash/ {print $1 - 256;}'` bs=1
@@ -121,7 +121,7 @@ Writing header to header. Create image with
          cat header kernel squashfs-root.sq padding > tclinux.bin
 $
 ```
-##TODO
+## TODO
 * Don't overwrite existing local files without warning.
 * command line option for model instead of hard wiring it.
 * warn if the modifications to the firmware lead to flash sizes bigger than 16MB (maybe also configurable flash size)
