@@ -123,5 +123,4 @@ $
 ```
 ## TODO
 * Don't overwrite existing local files without warning.
-* command line option for model instead of hard wiring it.
 * warn if the modifications to the firmware lead to flash sizes bigger than 16MB (maybe also configurable flash size)
