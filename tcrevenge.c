@@ -10,6 +10,7 @@ const unsigned int magic_number = 0x32524448;
 const unsigned int magic_device = 0x00000100;	// maybe the header_size
 const char *firmware_version = "7.0.1.0\n";	// this looks that is not actually used
 const char *model="3 6035 122 74\n";		// this is used to prevent downgrades. It is the actual version
+const char *board="\n";
 
 const unsigned int magic_number_offset = 0;
 const unsigned int magic_device_offset = 4;
@@ -179,6 +180,17 @@ int main(int argc, const char *argv[]) {
         model = add_newline(argv[i]);
         arg_err = 0;
         continue;
+      } else if (!strcmp(argv[i], "-b") || !strcmp(argv[i], "--board")) {
+        mode = CREATE;
+        if (i >= argc -1) {
+          fprintf(stderr, "Board not specified\n");
+          arg_err = 2;
+          break;
+        }
+        i++;
+        board = add_newline(argv[i]);
+        arg_err = 0;
+        continue;        
       } else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--version")) {
         mode = CREATE;
         if (i >= argc -1) {
@@ -218,7 +230,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == HELP || arg_err) {
-    fprintf(stderr, "Usage: %s [ {-h|--help} | {-c|--check tclinux.bin} | {-k|--kernel kernel.bin -s|--squashfs squashfs.bin -o|--output header.bin -p|--padding padding.bin [-m|--model 'model]' [-v|--version 'firmware_version']} ]\n", argv[0]);
+    fprintf(stderr, "Usage: %s [ {-h|--help} | {-c|--check tclinux.bin} | {-k|--kernel kernel.bin -s|--squashfs squashfs.bin -o|--output header.bin -p|--padding padding.bin [-m|--model 'model'] [-b|--board 'board'] [-v|--version 'firmware_version']} ]\n", argv[0]);
     return arg_err;
   }
 
@@ -304,7 +316,7 @@ int main(int argc, const char *argv[]) {
     set_int(header, tclinux_checksum_offset, sum);
     printf("Firmware version at 0x%02X: %s\n", firmware_version_offset, strip_newline(firmware_version));
     set_string(header, firmware_version_offset, firmware_version);
-    set_string(header, 0x30, "\n");
+    set_string(header, 0x30, board);
     printf("squashfs offset: %u (0x%08X) at 0x%02X\n", squashfs_offset, squashfs_offset, squashfs_offset_offset);
     set_int(header, squashfs_offset_offset, squashfs_offset);
     printf("squashfs size: %u (0x%08X) at 0x%02X\n", squashfs_size, squashfs_size, squashfs_size_offset);
